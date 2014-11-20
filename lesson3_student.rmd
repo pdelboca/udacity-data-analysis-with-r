@@ -12,7 +12,9 @@ Notes:
 Notes:
 
 ```{r Pseudo-Facebook User Data}
-
+setwd("~/Repos/data-analysis-with-r/")
+pf <- read.csv("./data/pseudo_facebook.tsv", sep="\t")
+names(pf)
 ```
 
 ***
@@ -21,8 +23,10 @@ Notes:
 Notes:
 
 ```{r Histogram of Users\' Birthdays}
-install.packages('ggplot2')
 library(ggplot2)
+library(ggthemes)
+qplot(x = dob_day, data = pf ) +
+    scale_x_discrete(breaks = 1:31)
 ```
 
 ***
@@ -47,10 +51,11 @@ Response:
 
 #### How many of your friends do you think saw that post?
 Response:
+50
 
 #### Think about what percent of your friends on Facebook see any posts or comments that you make in a month. What percent do you think that is?
 Response:
-
+20%
 ***
 
 ### Perceived Audience Size
@@ -87,7 +92,8 @@ Notes:
 #### What code would you enter to create a histogram of friend counts?
 
 ```{r Friend Count}
-
+names(pf)
+qplot(x = friend_count, data = pf )
 ```
 
 #### How is this plot similar to Moira's first plot?
@@ -99,6 +105,10 @@ Response:
 Notes:
 
 ```{r Limiting the Axes}
+qplot(x = friend_count, data = pf, xlim = c(0,1000))
+
+qplot(x = friend_count, data = pf ) +
+    scale_x_continuous(limits = c(0,1000))
 
 ```
 
