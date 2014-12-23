@@ -232,6 +232,15 @@ Notes:
 Notes:
 
 ```{r Add a Scaling Layer}
+library(gridExtra)
+p1 <- qplot(x = friend_count, data = pf)
+p2 <- p1 + scale_x_log10()
+p3 <- p1 + scale_x_sqrt()
+grid.arrange(p1,p2,p3,ncol = 1)
+h1 <- qplot(x = friend_count, data = pf)
+h2 <- qplot(x = log10(friend_count), data = pf)
+h3 <- qplot(x = sqrt(friend_count), data = pf)
+grid.arrange(h1,h2,h3,ncol = 1)
 
 ```
 
@@ -241,7 +250,11 @@ Notes:
 ### Frequency Polygons
 
 ```{r Frequency Polygons}
-
+ggplot(data = subset(pf, !is.na(gender))) +
+  geom_freqpoly(aes(x = friend_count, y = ..count../sum(..count..),color = gender)) + 
+  scale_x_continuous(limits = c(0, 1000), breaks = seq(0, 1000, 50)) +
+  xlab('Friend Count') + 
+  ylab('Percentage of users with that friend count')
 ```
 
 ***
@@ -250,7 +263,12 @@ Notes:
 Notes:
 
 ```{r Likes on the Web}
+ggplot(data = subset(pf, !is.na(gender))) + 
+  geom_freqpoly(aes(x = www_likes, color = gender)) +
+  scale_x_continuous(limits = c(1, 1000), breaks = seq(1, 1000, 50)) +
+  scale_x_log10()
 
+by(pf$www_likes,pf$gender,sum)
 ```
 
 
@@ -260,12 +278,26 @@ Notes:
 Notes:
 
 ```{r Box Plots}
-
+qplot(x=gender,y=friend_count,
+      data = subset(pf, !is.na(gender)), geom = "boxplot")
 ```
 
 #### Adjust the code to focus on users who have friend counts between 0 and 1000.
 
 ```{r}
+q1 <- qplot(x=gender,y=friend_count,
+      data = subset(pf, !is.na(gender) & friend_count > 0 & friend_count < 1000 ),
+      geom = "boxplot")
+
+q2 <- qplot(x=gender,y=friend_count,
+      data = subset(pf, !is.na(gender)), geom = "boxplot",
+      ylim = c(0,1000))
+
+q3 <- qplot(x=gender,y=friend_count,
+      data = subset(pf, !is.na(gender)), geom = "boxplot") + 
+  coord_cartesian(ylim = c(0,1000))
+
+grid.arrange(q1,q2,q3,ncol = 3)
 
 ```
 
@@ -275,7 +307,12 @@ Notes:
 Notes:
 
 ```{r Box Plots, Quartiles, and Friendships}
+qplot(x = gender, y = friend_count,
+      data = subset(pf, !is.na(gender)),
+      geom = "boxplot") +
+  coord_cartesian(ylim = c(0,250))
 
+by(pf$friend_count,pf$gender,summary)
 ```
 
 #### On average, who initiated more friendships in our sample: men or women?
@@ -283,7 +320,12 @@ Response:
 #### Write about some ways that you can verify your answer.
 Response:
 ```{r Friend Requests by Gender}
+qplot(x = gender, y = friendships_initiated,
+      data = subset(pf, !is.na(gender)),
+      geom = "boxplot") +
+  coord_cartesian(ylim = c(0,250))
 
+by(pf$friendships_initiated,pf$gender,summary)
 ```
 
 Response:
@@ -294,6 +336,17 @@ Response:
 Notes:
 
 ```{r Getting Logical}
+summary(pf$mobile_likes)
+
+summary(pf$mobile_likes > 0)
+
+mobile_check_in <- NA
+pf$mobile_check_in <- ifelse(pf$mobile_likes > 0, 1, 0)
+pf$mobile_check_in <- factor(pf$mobile_check_in)
+summary(pf$mobile_check_in)
+
+sum(pf$mobile_check_in == 1) / length(pf$mobile_check_in)
+table(pf$mobile_likes > 0) / length(pf$mobile_likes)
 
 ```
 
