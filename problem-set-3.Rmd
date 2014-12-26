@@ -123,9 +123,118 @@ Investigate the price of diamonds using box plots, numerical summaries, and one
 of the following categorical variables: cut, clarity, or color.
 
 ```{r}
-
+by(diamonds$price, diamonds$color, summary)
+ggplot(diamonds) + geom_boxplot(aes(x = color,  y = price, fill = color)) + 
+  coord_cartesian(ylim = c(0, 8000)) + 
+  scale_y_continuous(breaks = seq(0,8000,500)) +
+  ggtitle("Diamonds Price by Color.")
 ```
 
+### Excercise 11: Interquartile range - IQR
+a) What is the price range for the middle 50% of diamonds with color D?
+```{r}
+by(diamonds$price, diamonds$color, summary)
+```
+b) What is the price range for the middle 50% of diamonds with color J?
+```{r}
+by(diamonds$price, diamonds$color, summary)
+```
+c) What is the IQR for diamonds  with the best color?
+```{r}
+by(diamonds$price, diamonds$color, IQR)
+```
+
+d) What is the IQR for diamonds  with the worst color?
+```{r}
+by(diamonds$price, diamonds$color, IQL)
+```
+
+### Excercise 12: Price per Carat Box Plots by Color
+Investigate the price per carat of diamonds across the different colors of diamonds 
+using boxplots.
+```{r}
+ggplot(diamonds) + geom_boxplot(aes(x=color,y=price/carat, fill=color)) + 
+  scale_y_continuous(breaks = seq(0,8000,500)) + 
+  coord_cartesian(ylim = c(0,8000)) + 
+  ylab("Price per Carat") +
+  ggtitle("Price per Carat by Color")
+```
+
+### Carat frequency polygon
+Investigate the weight of the diamonds (carat) using a frequency polygon. Use different
+bin widths to see how the frequency polygon changes. What carat size has a count greater 
+than 2000?
+```{r}
+ggplot(diamonds) + geom_freqpoly(aes(x = carat), binwidth = 0.02) + 
+  scale_x_continuous(breaks = seq(0,5,0.1)) + 
+  geom_hline(y = 2000,color = "red") + 
+  ggtitle("Carat Frequency Polygon")
+```
+
+### Gapminder Data
+The Gapminder website contains over 500 data sets with information about the world's population. Your task is to download a data set of your choice and create 2-5 
+plots that make use of the techniques from Lesson 3.
+
+You might use a simple histogram, a boxplot split over a categorical variable,
+or a frequency polygon. The choice is yours!
+
+You can find a link to the Gapminder website in the Instructor Notes.
+
+Once you've completed your investigation, create a post in the discussions that includes:
+ 1. any questions you answered, your observations, and summary statistics
+ 2. snippets of code that created the plots
+ 3. links to the images of your plots
+
+
+##### Download and Cleaning data
+```{r}
+library(reshape2)
+library(plyr)
+setwd("~/Repos/data-analysis-with-r/")
+file.path <- "./data/indicator_forest coverage.csv"
+data <- read.csv(file.path,col.names = c("Country","1990","2000","2005"))
+g19.countries <- c("Argentina","Australia", "Brasil","Canada","China","France",
+                   "Germany", "India", "Indonesia","Italy", "Japan","Mexico",
+                   "Russia", "Saudi Arabia", "South Africa","South Korea",
+                   "Turkey", "United Kingdom", "United States")
+
+data <- melt(data, id.vars = c("Country"))
+names(data) <- c("Country","Year","Forest.Coverage")
+
+data$Year <- gsub("X","",data$Year)
+data$Year <- as.factor(data$Year)
+
+data$Forest.Coverage <- gsub(",",".",data$Forest.Coverage)
+data$Forest.Coverage <- as.numeric(data$Forest.Coverage,na.action)
+data[which.max(data$Forest.Coverage),]
+```
+#### Data Processing
+```{r}
+ggplot(data) + geom_boxplot(aes(x = Year, y = Forest.Coverage, fill = Year)) + 
+  ylab("Forest Coverage (%)") + 
+  ggtitle("Forest Coverage (%) in each Country by Year")
+```
+We can deduce that the percent of Forest Coverage accross the world decreased a 
+little bit between 1990 and 2005
+
+My Country: Argentina
+```{r}
+ggplot(argentina) + 
+  geom_line(aes(x=Year,y=Forest.Coverage, group = Country), stat= "identity") +
+  ggtitle("Forest Coverage (%) Evolution in Argentina by a period of 5 Years") + 
+  ylab("Forest Coverage (%)")
+```
+Forest Coverage Histogram per Year
+```{r}
+ggplot(data) + geom_histogram(aes(Forest.Coverage, fill = Year), binwidth = 2) +
+  facet_grid(. ~ Year)
+
+# 
+ggplot(subset(data)) + 
+  geom_freqpoly(aes(Forest.Coverage, color = Year), binwidth = 1)
+
+
+```
 
 
 
