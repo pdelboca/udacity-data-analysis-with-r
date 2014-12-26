@@ -146,7 +146,7 @@ by(diamonds$price, diamonds$color, IQR)
 
 d) What is the IQR for diamonds  with the worst color?
 ```{r}
-by(diamonds$price, diamonds$color, IQL)
+by(diamonds$price, diamonds$color, IQR)
 ```
 
 ### Excercise 12: Price per Carat Box Plots by Color
@@ -198,6 +198,9 @@ g19.countries <- c("Argentina","Australia", "Brasil","Canada","China","France",
                    "Russia", "Saudi Arabia", "South Africa","South Korea",
                    "Turkey", "United Kingdom", "United States")
 
+south.america <- c("Argentina", "Chile", "Uruguay", "Paraguay", "Brazil",
+                   "Peru", "Ecuador", "Bolivia", "Venezuela", "Colombia")
+
 data <- melt(data, id.vars = c("Country"))
 names(data) <- c("Country","Year","Forest.Coverage")
 
@@ -206,34 +209,83 @@ data$Year <- as.factor(data$Year)
 
 data$Forest.Coverage <- gsub(",",".",data$Forest.Coverage)
 data$Forest.Coverage <- as.numeric(data$Forest.Coverage,na.action)
-data[which.max(data$Forest.Coverage),]
+
+data <- subset(data, Country %in% g19.countries)
+# data <- subset(data, Country %in% south.america)
+
 ```
 #### Data Processing
 ```{r}
-ggplot(data) + geom_boxplot(aes(x = Year, y = Forest.Coverage, fill = Year)) + 
+ggplot(data) + 
+  geom_boxplot(aes(x = Year, y = Forest.Coverage, fill = Year), alpha = 0.5) + 
+  scale_y_continuous(breaks = seq(0,60,5)) +
   ylab("Forest Coverage (%)") + 
   ggtitle("Forest Coverage (%) in each Country by Year")
 ```
-We can deduce that the percent of Forest Coverage accross the world decreased a 
-little bit between 1990 and 2005
+We can deduce that the percent of Forest Coverage accross Mercosur's Countries
+decreased from ~53% to 46% 1990 and 2005.
 
-My Country: Argentina
 ```{r}
+argentina <- subset(data, Country == "Argentina")
+argentina
 ggplot(argentina) + 
-  geom_line(aes(x=Year,y=Forest.Coverage, group = Country), stat= "identity") +
-  ggtitle("Forest Coverage (%) Evolution in Argentina by a period of 5 Years") + 
-  ylab("Forest Coverage (%)")
+  geom_line(aes(x=Year,y=Forest.Coverage, group = Country), stat= "identity",
+            size = 2, color = "red") +
+  geom_boxplot(data = data , aes(x=Year,y=Forest.Coverage, fill = Year), alpha = 0.25) + 
+  ggtitle("Forest Coverage (%) Evolution in Argentina by a period of 5 Years\n 
+          compared with the average of Mercosur") + 
+  ylab("Forest Coverage (%)") 
 ```
-Forest Coverage Histogram per Year
+
 ```{r}
-ggplot(data) + geom_histogram(aes(Forest.Coverage, fill = Year), binwidth = 2) +
-  facet_grid(. ~ Year)
+ggplot(data) + 
+  geom_line(aes(x=Year,y=Forest.Coverage, group = Country, 
+                color = Country),
+            stat= "identity", size = 2) +
+  ggtitle("Forest Coverage (%) Evolution in Argentina by a period of 5 Years") + 
+  geom_boxplot(aes(x=Year,y=Forest.Coverage, fill = Year), alpha = 0.25) + 
+  ylab("Forest Coverage (%)") #+  
+#  scale_colour_manual(values = c("red","blue", "green", "yellow", "cyan", "grey",
+                                 #"brown", "purple", "pink", "gold"))
+```
 
-# 
-ggplot(subset(data)) + 
-  geom_freqpoly(aes(Forest.Coverage, color = Year), binwidth = 1)
 
+```{r}
+top.countries.2005 <- subset(data, Year == 2005)
+top.countries.2005 <- top.countries.2005[order(top.countries.2005$Forest.Coverage, 
+                                               decreasing = T),]
 
+top.countries.2005$Country <- factor(top.countries.2005$Country, 
+                                     levels = top.countries.2005$Country)
+ggplot(top.countries.2005[1:20,]) + 
+  geom_bar(aes(x=Country, y = Forest.Coverage), fill = "blue4", stat = "identity") +
+  ylab("Forest Coverage in 2005") + 
+  ggtitle("Forest Coverage (%) in Mercosur Countries in 2005.")
+```
+
+```{r}
+Country <- as.character(unique(data$Country))
+Evolution <- subset(data, Year == 2005)$Forest.Coverage - subset(data, Year == 1990)$Forest.Coverage
+
+countries.evolution <- data.frame(Country, Evolution)
+countries.evolution <- arrange(countries.evolution,Evolution,decreasing = T)
+countries.evolution$Country <- factor(countries.evolution$Country,
+                                      levels = countries.evolution$Country) 
+
+ggplot(countries.evolution[1:20,]) + 
+  geom_bar(aes(x=Country,y=Evolution), fill = "blue4", stat = "identity") +
+  scale_y_continuous(breaks = seq(-11,15,1)) + 
+  ggtitle("Changes in Forest Coverage (%)\n from 1990 to 2005") +
+  ylab("Changes in Forest Coverage (%)")
+
+library(rworldmap)
+library(RColorBrewer)
+
+colourPalette <- brewer.pal(7,"Greens")
+sPDF <- joinCountryData2Map( countries.evolution, joinCode = "NAME", 
+                             nameJoinColumn = "Country")
+mapCountryData( sPDF, nameColumnToPlot="Evolution",
+                   colourPalette = colourPalette )
 ```
 
 
