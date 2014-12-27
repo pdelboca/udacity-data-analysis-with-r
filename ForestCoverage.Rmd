@@ -1,0 +1,239 @@
+# Introduction
+This analysis is the result of an excercise made in Udacity's Course: [Exploratory Data Analysis with R](https://www.udacity.com/course/ud651)
+
+### Excercise Instructions: Gapminder Data
+The Gapminder website contains over 500 data sets with information about the world's population. Your task is to download a data set of your choice and create 2-5 
+plots that make use of the techniques from Lesson 3.
+
+You might use a simple histogram, a boxplot split over a categorical variable,
+or a frequency polygon. The choice is yours!
+
+[Link to the Gapminder website](http://www.gapminder.org/data/).
+
+Once you've completed your investigation, create a post in the discussions that includes:  
+1. any questions you answered, your observations, and summary statistics  
+2. snippets of code that created the plots  
+3. links to the images of your plots  
+
+# Data Analysis  
+#### Load necesary Libraries
+```{r}
+library(reshape2)
+library(plyr)
+library(ggplot2)
+library(rworldmap)
+library(RColorBrewer)
+```
+
+
+### Download and Cleaning data
+```{r}
+setwd("~/Repos/data-analysis-with-r/")
+file.path <- "./data/indicator_forest coverage.csv"
+data <- read.csv(file.path,col.names = c("Country","1990","2000","2005"))
+
+data <- melt(data, id.vars = c("Country"))
+names(data) <- c("Country","Year","Forest.Coverage")
+
+data$Year <- gsub("X","",data$Year)
+data$Year <- as.factor(data$Year)
+
+data$Forest.Coverage <- gsub(",",".",data$Forest.Coverage)
+data$Forest.Coverage <- as.numeric(data$Forest.Coverage,na.action)
+
+data <- data[complete.cases(data),]
+```
+### Data Processing
+```{r}
+ggplot(data) + 
+  geom_boxplot(aes(x = Year, y = Forest.Coverage, fill = Year), alpha = 0.5) + 
+  scale_y_continuous(breaks = seq(0,60,5)) +
+  coord_cartesian(ylim = c(10,60)) + 
+  ylab("Average Forest Coverage (%)") + 
+  ggtitle("Average Forest Coverage (%) by Year")
+```
+  
+We can deduce that mean of the percent of Forest Coverage accross all the 
+Countries decreased from ~30% to ~28% between 1990 and 2005.
+
+#### Argentina:
+```{r}
+argentina <- subset(data, Country == "Argentina")
+argentina
+
+ggplot(argentina) + 
+  geom_line(aes(x=Year,y=Forest.Coverage, group = Country), stat= "identity",
+            size = 1, color = "red") +
+  geom_boxplot(data = data , aes(x=Year,y=Forest.Coverage, fill = Year), alpha = 0.25) + 
+  ggtitle("Forest Coverage (%) Changes in Argentina between 1990 and 2005\n 
+          compared with the average of the World") + 
+  ylab("Average Forest Coverage (%)") 
+```
+  
+Argentina's Forest Coverage went down from 12.88% to 12.07%. Argentina's values
+are limiting the First Quantile of the entire population.
+
+
+#### South America
+```{r}
+south.america <- c("Argentina", "Chile", "Uruguay", "Paraguay", "Brazil",
+                   "Peru", "Ecuador", "Bolivia", "Venezuela", "Colombia",
+                   "Suriname", "French Guiana", "Guyana")
+south.america.data <- subset(data, Country %in% south.america)
+
+ggplot(south.america.data) + 
+  geom_line(aes(x=Year,y=Forest.Coverage, group = Country, 
+                color = Country),
+            stat= "identity", size = 1) +
+  ggtitle("Forest Coverage (%) Changes in South America Countries\n 
+           between 1990 and 2005 compared with the average of the region.") + 
+  geom_boxplot(aes(x=Year,y=Forest.Coverage, fill = Year), alpha = 0.25) + 
+  ylab("Forest Coverage (%)") +  
+  #scale_colour_manual(values = c("red","blue", "green", "yellow", "cyan", "grey",
+   #                              "brown", "purple", "pink", "gold")) + 
+  scale_y_continuous(breaks = seq(0,70,5))
+```
+  
+Some conclusions:  
+ - There are a lot of differences between the top countries, Brazil and Colombia,
+ and Uruguay and Chile. Almost a 50% of difference.  
+ - Only 2 countries has increased it's Forest Coverage, Uruguay and Chile.  
+ - The mean of Forest Coverage in South America decreased from ~58% to ~50%. This 
+ difference is bigger than the average of the World.  
+ - Countries like Brazil, Colombia and Venezuela has almost a 60% of Forest Coverage!  
+
+#### G20 Countries 
+I've excluded European Union and South Korea due to missing values in the Data Set
+```{r}
+g20 <- c("Argentina","Australia", "Brazil","Canada","China","France",
+                   "Germany", "India", "Indonesia","Italy", "Japan","Mexico",
+                   "Russia", "Saudi Arabia", "South Africa",
+                   "Turkey", "United Kingdom", "United States")
+g20.data <- subset(data, Country %in% g20)
+
+ggplot(g20.data) + 
+  ggtitle("Forest Coverage (%) Changes in g20 Countries.\n 
+           between 1990 and 2005,\n compared with the average of the group.") + 
+  geom_boxplot(aes(x=Year,y=Forest.Coverage, fill = Year), alpha = 0.25) + 
+  ylab("Forest Coverage (%)") +
+  scale_y_continuous(breaks = seq(0,70,5))
+```
+  
+We can deduce that mean of the Forest Coverage accross all the g20
+Countries increased from ~27.5% to ~30% between 1990 and 2005. Since the World
+tendency is to decrease, **Which Countries in the G20 Group have increased it's Forest Coverage?**
+
+#### G20 Countries that increased its Forest Coverage
+Now I want to calculate the variance in the Forest Coverage in the G20 Countries
+to determine which ones increased and which ones decreased.  
+
+```{r}
+# Calculate de Difference Between FC in 2005 and FC in 1990.
+Changes <- subset(g20.data, Year == 2005)$Forest.Coverage - subset(g20.data, Year == 1990)$Forest.Coverage
+# Get the list of Countries
+Country <- subset(g20.data, Year == 2005)$Country
+# Create the Data Frame
+g20.Changes <- data.frame(Country, Changes)
+# Order the Data Frame by Changes
+g20.Changes <- arrange(g20.Changes,Changes,decreasing = TRUE)
+# Reset the Factors levels so ggplot can plot in correct order
+g20.Changes$Country <- factor(g20.Changes$Country,
+                                      levels = g20.Changes$Country) 
+g20.Changes
+
+ggplot(g20.Changes) + 
+  geom_bar(aes(x=Country,y=Changes), fill = "blue4", stat = "identity") +
+  scale_y_continuous(breaks = seq(-20,15,1)) + 
+  ggtitle("Changes in Forest Coverage (%)\n in g20 countries from 1990 to 2005") +
+  ylab("Changes in Forest Coverage (%)") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+```
+  
+Some interesting results:  
+- Italy, China, France, India, United Kingdom, Germany, Turkey and United States
+ **increased** their Forest Coverage from 1990 to 2005  
+- Japan, Australia, Argentina, Mexico, Brazil, and Indonesia **decreased**
+ their Forest Coverage between 1900 and 2005  
+- Wondering about Indonesia? [Deforestation in Indonesia](http://en.wikipedia.org/wiki/Deforestation_in_Indonesia)
+
+#### Top Countries in the World 2005
+Which are the Countries in the World with most Forest Coverage?  
+
+```{r}
+top.countries.2005 <- subset(data, Year == 2005)
+top.countries.2005 <- top.countries.2005[order(top.countries.2005$Forest.Coverage, 
+                                               decreasing = TRUE),]
+
+top.countries.2005$Country <- factor(top.countries.2005$Country, 
+                                     levels = top.countries.2005$Country)
+# Plot Top 20
+ggplot(top.countries.2005[1:20,]) + 
+  geom_bar(aes(x=Country, y = Forest.Coverage), fill = "blue4", stat = "identity") +
+  ylab("Forest Coverage in 2005") + 
+  ggtitle("20 Countries with more Forest Coverage (%) in the World in 2005.") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+  
+- Learn a little bit more about [Pitcairng](http://en.wikipedia.org/wiki/Pitcairn_Islands)  
+- Some info about [Suriname](http://en.wikipedia.org/wiki/Suriname)
+
+Which are the Countries in the World with less Forest Coverage?  
+
+```{r}
+# Plot Top 20
+ggplot(tail(top.countries.2005, 20)) + 
+  geom_bar(aes(x=Country, y = Forest.Coverage), fill = "blue4", stat = "identity") +
+  ylab("Forest Coverage in 2005") + 
+  ggtitle("20 Countries with less Forest Coverage (%) in the World in 2005.") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+#### Top/Bottom Changes in Forest Coverage in the World
+Which countries has increased/decreased its Forest Coverage between 1990 and 2005?  
+
+```{r}
+Country <- as.character(unique(data$Country))
+Changes <- subset(data, Year == 2005)$Forest.Coverage - subset(data, Year == 1990)$Forest.Coverage
+
+countries.Changes <- data.frame(Country, Changes)
+countries.Changes <- arrange(countries.Changes,Changes,decreasing = T)
+countries.Changes$Country <- factor(countries.Changes$Country,
+                                      levels = countries.Changes$Country) 
+
+ggplot(countries.Changes[1:20,]) + 
+  geom_bar(aes(x=Country,y=Changes), fill = "blue4", stat = "identity") +
+  scale_y_continuous(breaks = seq(-11,15,1)) + 
+  ggtitle("Changes in Forest Coverage (%)\n from 1990 to 2005") +
+  ylab("Changes in Forest Coverage (%)") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplot(tail(countries.Changes, 20)) + 
+  geom_bar(aes(x=Country,y=Changes), fill = "blue4", stat = "identity") +
+  scale_y_continuous(breaks = seq(-25,15,1)) + 
+  ggtitle("Changes in Forest Coverage (%)\n from 1990 to 2005") +
+  ylab("Changes in Forest Coverage (%)") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+x <- rbind(countries.Changes[1:10,], tail(countries.Changes, 10))
+ggplot(x) + 
+  geom_bar(aes(x=Country,y=Changes), fill = "blue4", stat = "identity") +
+  scale_y_continuous(breaks = seq(-25,15,1)) + 
+  ggtitle("Top 10 and Bottom 10 changes in Forest Coverage (%)\n from 1990 to 2005") +
+  ylab("Changes in Forest Coverage (%)") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+  
+- Wow! Honduras has reduced its Forest Coverage by almost a 25%!
+
+
+#### Fancy World Map Graph
+Of course there should be a Fancy World Map with some info:
+```{r}
+colourPalette <- brewer.pal(7,"Greens")
+sPDF <- joinCountryData2Map( countries.Changes, joinCode = "NAME", 
+                             nameJoinColumn = "Country")
+mapCountryData( sPDF, nameColumnToPlot="Changes",
+                   colourPalette = colourPalette )
+```
