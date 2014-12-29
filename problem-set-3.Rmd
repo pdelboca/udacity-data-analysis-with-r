@@ -169,7 +169,81 @@ ggplot(diamonds) + geom_freqpoly(aes(x = carat), binwidth = 0.02) +
   scale_x_continuous(breaks = seq(0,5,0.1)) + 
   geom_hline(y = 2000,color = "red") + 
   ggtitle("Carat Frequency Polygon")
-``
+```
+
+### Excercise 13: Gapminder data
+
+[Link to the Excercise](http://rpubs.com/pdelboca/forest-coverage)
+
+### Excercise 14: Birthday Histograms
+Your task is to investigate the distribution of your friends' birth months and days.  
+Here some questions you could answer, and we hope you think of others.
+
+**********************************************************************
+
+- How many people share your birthday? Do you know them?  
+- Which month contains the most number of birthdays?  
+- How many birthdays are in each month?  
+- Which day of the year has the most number of birthdays?  
+- Do you have at least 365 friends that have birthdays on everyday
+of the year?  
+
+#### Load and Cleaning data
+```{r}
+library(lubridate)
+setwd("~/Repos/data-analysis-with-r/")
+birthdays <- read.csv("./data//birthdaysExample.csv")
+birthdays$dates <- mdy(birthdays$dates)
+birthdays$month <- month(birthdays$dates)
+birthdays$day <- day(birthdays$dates)
+```
+#### Data Processing
+Some basic analysis:
+```{r}
+summary(birthdays)
+table(birthdays$month)
+table(birthdays$day)
+```
+
+
+How many people share your birthday? Do you know them?
+```{r}
+# April, 3rd
+april.third <- subset(birthdays, month == 04 & day == 03)
+nrow(april.third)
+```
+Which month contains the most number of birthdays?
+```{r}
+ggplot(birthdays) + geom_histogram(aes(x = month),
+                                   color = I('black'),
+                                   fill = I('#099DD9'),
+                                   binwidth = 1) +
+  scale_y_discrete() +
+  scale_x_discrete() + 
+  ggtitle("Birthdays per Month")
+```
+How many birthdays are in each month?
+```{r}
+table(birthdays$month)
+```
+Which day of the year has the most number of birthdays? 
+```{r}
+ggplot(birthdays) + geom_histogram(aes(x = day),
+                                   color = I('black'),
+                                   fill = I('#099DD9'),
+                                   binwidth = 1) +
+  scale_y_discrete() +
+  scale_x_discrete() + 
+  ggtitle("Birthdays per Day")
+```
+Do you have at least 365 friends that have birthdays on everyday
+of the year? 
+```{r}
+length(unique(birthdays$dates))
+# There are 348 different dates so the answer is no
+```
+
+
 
 
 
