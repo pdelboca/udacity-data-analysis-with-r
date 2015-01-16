@@ -12,42 +12,34 @@ Notes:
 Notes:
 
 ```{r Scatterplots}
-
+setwd("~/Repos//data-analysis-with-r")
+library(ggplot2)
+pf <- read.csv("./data/pseudo_facebook.tsv", sep ="\t")
+p <- ggplot(pf) + theme_bw()
+p + geom_point(aes(x=age, y=friend_count))
 ```
 
 ***
 
 #### What are some things that you notice right away?
 Response:
-
+A lot of outliers. A lot of people with age 90+, also the majority of the friends are under the age of 30.
 ***
 
 ### ggplot Syntax
 Notes:
 
 ```{r ggplot Syntax}
-
-```
-
-***
-
-### Overplotting
-Notes:
-
-```{r Overplotting}
-
-```
-
-#### What do you notice in the plot?
-Response:
-
-***
+p + geom_jitter(aes(x=age, y=friend_count), alpha = 1/20) +
+  xlim(13,90)
+``
 
 ### Coord_trans()
 Notes:
 
 ```{r Coord_trans()}
-
+p + geom_point(aes(x=age, y=friend_count), alpha = 1/20) +
+  xlim(13,90) + coord_trans(y = "sqrt")
 ```
 
 #### Look up the documentation for coord_trans() and add a layer to the plot that transforms friend_count using the square root function. Create your plot!
@@ -61,10 +53,12 @@ Notes:
 ***
 
 ### Alpha and Jitter
+Explore the relation between friends initiated vs age
 Notes:
 
 ```{r Alpha and Jitter}
-
+p + geom_jitter(aes(x=age,y=friendships_initiated), alpha = 1/20) +
+  xlim(13,90) 
 ```
 
 ***
@@ -78,15 +72,26 @@ Notes:
 Notes:
 
 ```{r Conditional Means}
+library(dplyr)
+
+age_group <- group_by(age, .data = pf)
+pf.fc_by_age <- summarise(age_group,
+                          friend_count_mean = mean(friend_count),
+                          friend_count_median = median(friend_count),
+                          n = n()
+                          )
+pf.fc_by_age <- arrange(pf.fc_by_age, age)
+
+
+ggplot(pf.fc_by_age) + geom_line(aes(x=age, y=friend_count_mean), color = "red") +
+  ggtitle("Friend Count Mean/Median by Age") +
+  xlim(13,90)
+
+ggplot(pf.fc_by_age) + geom_line(aes(x=age, y=friend_count_median), color = "blue") +
+  ggtitle("Friend Count Median by Age") +
+  xlim(13,90)
 
 ```
-
-Create your plot!
-
-```{r Conditional Means Plot}
-
-```
-
 ***
 
 ### Overlaying Summaries with Raw Data
