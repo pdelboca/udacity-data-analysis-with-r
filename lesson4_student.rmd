@@ -98,7 +98,13 @@ ggplot(pf.fc_by_age) + geom_line(aes(x=age, y=friend_count_median), color = "blu
 Notes:
 
 ```{r Overlaying Summaries with Raw Data}
-
+ggplot(aes(x=age,y=friend_count), data = pf) + geom_point(alpha = 1/20, color = "orange") +
+  geom_line(stat = "summary", fun.y = mean) +
+  geom_line(stat = "summary", fun.y = quantile, prob = 0.1, linetype = 2, color = "red") + 
+  geom_line(stat = "summary", fun.y = quantile, prob = 0.5, color = "red") + 
+  geom_line(stat = "summary", fun.y = quantile, prob = 0.9, linetype = 2, color = "red") + 
+  coord_cartesian(xlim = c(30,60)) + 
+  coord_trans(y = "sqrt")
 ```
 
 #### What are some of your observations of the plot?
@@ -117,7 +123,7 @@ Notes:
 Notes:
 
 ```{r Correlation}
-
+cor.test(pf$age, pf$friend_count)
 ```
 
 Look up the documentation for the cor.test function.
@@ -131,7 +137,7 @@ Response:
 Notes:
 
 ```{r Correlation on Subsets}
-with(                 , cor.test(age, friend_count))
+with(subset(pf, age <= 70), cor.test(age, friend_count, method = "pearson"))
 ```
 
 ***
@@ -145,7 +151,7 @@ Notes:
 Notes:
 
 ```{r}
-
+ggplot(pf) + geom_point(aes(x=www_likes_received,y=likes_received), color = "blue")
 ```
 
 ***
@@ -154,17 +160,20 @@ Notes:
 Notes:
 
 ```{r Strong Correlations}
+ggplot(pf,aes(x=www_likes_received,y=likes_received)) + geom_point(color = "blue") +
+  xlim(0, quantile(pf$www_likes_received,prob=0.95)) +
+  ylim(0, quantile(pf$likes_received,prob=0.95)) + 
+  geom_smooth(method = "lm",color = "red", size = 2)
 
 ```
 
 What's the correlation betwen the two variables? Include the top 5% of values for the variable in the calculation and round to 3 decimal places.
 
 ```{r Correlation Calcuation}
-
+cor.test(pf$www_likes_received,pf$likes_received)
 ```
 
-Response:
-
+Response: 0.948
 ***
 
 ### Moira on Correlation
@@ -183,19 +192,20 @@ library(alr3)
 Create your plot!
 
 ```{r Temp vs Month}
-
+?Mitchell
+ggplot(Mitchell) + geom_point(aes(x=Month,y=Temp))
 ```
 
 ***
 
 ### Noisy Scatterplots
 a. Take a guess for the correlation coefficient for the scatterplot.
-
+0.1
 b. What is the actual correlation of the two variables?
 (Round to the thousandths place)
 
 ```{r Noisy Scatterplots}
-
+cor(Mitchell$Month,Mitchell$Temp)
 ```
 
 ***
@@ -204,7 +214,12 @@ b. What is the actual correlation of the two variables?
 Notes:
 
 ```{r Making Sense of Data}
+ggplot(data = Mitchell, aes(x = Month, y = Temp)) + geom_point() +
+  scale_x_discrete(breaks=seq(0, 203, 12), labels=(seq(1976,1992,1))) +
+xlab('Year')
 
+ggplot(aes(x=(Month%%12),y=Temp),data=Mitchell)+ 
+  geom_point()
 ```
 
 ***
@@ -223,7 +238,7 @@ Notes:
 Notes:
 
 ```{r Understanding Noise: Age to Age Months}
-
+ggplot(data = pf.fc_by_age, aes(x=age,y=friend_count_median)) + geom_line()
 ```
 
 ***
@@ -231,11 +246,19 @@ Notes:
 ### Age with Months Means
 
 ```{r Age with Months Means}
-
+str(pf)
+pf$age_with_months <- pf$age + (12 - pf$dob_month)/12
 ```
 
 Programming Assignment
 ```{r Programming Assignment}
+library(dplyr)
+pf.fc_by_age_months <- pf %>%
+  group_by(age_with_months) %>%
+  summarise(friend_count_mean = mean(friend_count),
+            friend_count_median = median(friend_count),
+            n = n()) %>%
+  arrange(age_with_months)
 
 ```
 
@@ -244,7 +267,9 @@ Programming Assignment
 ### Noise in Conditional Means
 
 ```{r Noise in Conditional Means}
-
+ggplot(subset(pf.fc_by_age_months, age_with_months < 71),
+      aes(x = age_with_months, y = friend_count_mean)) +
+  geom_line()
 ```
 
 ***
