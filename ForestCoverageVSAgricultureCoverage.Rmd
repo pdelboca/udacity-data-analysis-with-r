@@ -1,0 +1,198 @@
+---
+title: "Forest Coverage vs Agriculture Coverage"
+author: "pdelboca"
+date: "30/01/2015"
+output: html_document
+---
+## Introduction
+In my last analysis I went through the Forest Coverage in the main Countries of 
+the world. As now, I'm practicing 2 Variables analysis I will add the Agriculture 
+Coverage of each country to analyze the relationship between deforestation and 
+agriculture in each country.
+
+```{r}
+library(reshape2) # melt function
+library(ggplot2)
+library(gridExtra)
+setwd("~/Repos//data-analysis-with-r")
+```
+
+## Getting and Cleaning Data
+Data has been obtained and downloaded from [Gapminder](http://www.gapminder.org/data/).
+
+There are 2 datasets: **Agricultural land (% of land area)** and **Forest coverage (%)**.
+
+**Note:** Since the goal of this course is not Getting and Cleaning data, I've
+manually removed years from Agriculture data to make it easier to read and clean. 
+*This is not a recomended practice*.
+
+
+```{r,warning=FALSE}
+a.coverage <- read.csv("./data//agriculture land.csv",
+                   col.names = c("Country","1990","2000","2005"))
+f.coverage <- read.csv("./data//indicator_forest coverage.csv",
+                   col.names = c("Country","1990","2000","2005"))
+
+a.coverage <- melt(a.coverage, id.vars = c("Country"))
+names(a.coverage) <- c("Country","Year","Agriculture.Coverage")
+f.coverage <- melt(f.coverage, id.vars = c("Country"))
+names(f.coverage) <- c("Country","Year","Forest.Coverage")
+
+data <- merge(a.coverage,f.coverage, by=c("Country","Year"))
+
+data$Year <- gsub("X","",data$Year)
+data$Year <- as.factor(data$Year)
+data$Agriculture.Coverage <- gsub(",",".",data$Agriculture.Coverage)
+data$Agriculture.Coverage <- as.numeric(data$Agriculture.Coverage,na.action)
+data$Forest.Coverage <- gsub(",",".",data$Forest.Coverage)
+data$Forest.Coverage <- as.numeric(data$Forest.Coverage,na.action)
+
+rm(a.coverage,f.coverage)
+
+head(data)
+```
+
+Wow! I'm already learning something. I didn't know that [Afghanistan main economy
+was Agriculture](http://en.wikipedia.org/wiki/Afghanistan#Economy)
+
+## Data Processing
+
+#### First some basic histograms of the Variables:
+
+```{r}
+p1 <- ggplot(data, aes(x=Forest.Coverage)) + geom_histogram(binwidth = 3) + 
+  facet_wrap(~ Year) +
+  ggtitle("Forest Coverage around the World per Year")
+
+p2 <- ggplot(data, aes(x=Agriculture.Coverage)) + geom_histogram(binwidth = 3) + 
+  facet_wrap(~ Year) +
+  ggtitle("Agriculture Coverage around the World per Year")
+
+grid.arrange(p1,p2,ncol = 1)
+```
+
+It look's like the Agriculture Coverage tends to a normal distribution. It's a 
+pity I don't have data from the last 10 years!
+
+#### Let's plot a few BoxPlots:
+
+```{r, warning=FALSE}
+ggplot(data, aes(x = Year, y = Forest.Coverage, fill = Year)) + 
+  geom_boxplot(alpha = 0.5) + 
+  scale_y_continuous(breaks = seq(0,100,5)) +
+  coord_cartesian(ylim = c(00,100)) + 
+  ylab("Average Forest Coverage (%)") + 
+  ggtitle("Average Forest Coverage (%) by Year")
+
+
+ggplot(data, aes(x = Year, y = Agriculture.Coverage, fill = Year)) + 
+  geom_boxplot(alpha = 0.5) + 
+  scale_y_continuous(breaks = seq(0,100,5)) +
+  coord_cartesian(ylim = c(00,100)) + 
+  ylab("Average Agriculture Coverage (%)") + 
+  ggtitle("Average Agriculture Coverage (%) by Year")
+
+```
+
+Regarding Agriculture seems that 75% of the countries has 20% or more Agriculture 
+Coverage and the median is almost 40%.
+
+#### Argentina's Agriculture:
+
+```{r}
+argentina <- subset(data, Country == "Argentina")
+argentina
+```
+Agriculture in Argentina has grown almost a 3% Between 1990 and 2005.
+
+```{r}
+ggplot(argentina) + 
+  geom_line(aes(x=Year,y=Agriculture.Coverage, group = Country), stat= "identity",
+            size = 1, color = "red") +
+  geom_boxplot(data = data , aes(x=Year,y=Agriculture.Coverage, fill = Year), alpha = 0.25) + 
+  ggtitle("Agriculture Coverage (%) Changes in Argentina between 1990 and 2005\n 
+          compared with the average of the World") + 
+  ylab("Average Agriculture Coverage (%)") 
+```
+
+It's not surprising to see Argentina closer to the 75% Quantile than the median, 
+[Argentina has a long agriculture tradition](http://en.wikipedia.org/wiki/Agriculture_in_Argentina). Also remind that Argentina is the [8th biggest country in the world](http://simple.wikipedia.org/wiki/List_of_countries_by_area) which gives Argentina a lot of squared kilometers dedicated
+to the agriculture.
+
+#### Agriculture vs Forest Coverage
+
+Now let's start plotting some scatterplots:
+
+```{r}
+ggplot(data, aes(x=Forest.Coverage, y=Agriculture.Coverage)) + geom_point()
+```
+
+.... Okay.... No idea of how to read this plot. Let's try plotting only 1 Year, 
+lets say, the last one:
+
+```{r}
+ggplot(subset(data, Year == 2005),
+       aes(x=Forest.Coverage, y=Agriculture.Coverage)) + 
+  geom_point() +
+  ggtitle("Forest Coverage vs Agriculture Coverage (2005)")
+```
+
+
+Still no idea... :_)
+
+But I can see **a few interesting things**:  
+* There is a Diagonal tendence with negative slope  
+* It seems to be a Vertical line near the 0% of Forest Coverage  
+* There are only a few points above the diagonal  
+
+Regarding the third point... There shouldn't be points above the main diagonal,
+that will mean that Agriculture Coverage + Forest Coverage is bigger than the 100%
+of the land. Two options: **bad data** or some countries uses their forest as
+agriculture land... Let's dig a little bit.
+
+```{r}
+ggplot(subset(data, Year == 2005),
+       aes(x=Forest.Coverage, y=Agriculture.Coverage)) + 
+  geom_point() +
+  ggtitle("Forest Coverage vs Agriculture Coverage (2005)") + 
+  geom_abline(intercept = 100, slope = -1) +
+  scale_y_continuous(breaks = seq(0,100,5)) +
+  scale_x_continuous(breaks = seq(0,100,5)) 
+
+subset(data, Forest.Coverage + Agriculture.Coverage > 100)
+```
+
+
+It's logical to say that Forest Coverage and Agriculture Coverage has a negative
+ correlation, after all, you need to deforest in order to have more land to grow crops.
+ Let's see if there is a Correlation between the Forest Coverage and Agriculture Coverage
+ for 2005:
+ 
+ 
+```{r}
+with(subset(data, Year == 2005),
+     cor.test(Forest.Coverage,Agriculture.Coverage))
+```
+
+
+#### South America Countries
+```{r}
+south.america <- c("Argentina", "Chile", "Uruguay", "Paraguay", "Brazil",
+                   "Peru", "Ecuador", "Bolivia", "Venezuela", "Colombia",
+                   "Suriname", "French Guiana", "Guyana")
+south.america.data <- subset(data, Country %in% south.america)
+
+ggplot(subset(south.america.data, Year == 2005),
+       aes(x=Forest.Coverage, y=Agriculture.Coverage)) + 
+  geom_point(aes(color = Country), size = 5, alpha = 1/2) +
+  ggtitle("Forest Coverage vs Agriculture Coverage (2005)")
+  
+
+with(subset(south.america.data, Year == 2005),
+     cor.test(Forest.Coverage,Agriculture.Coverage))
+
+```
+
+
+#### G20 Countries
+
