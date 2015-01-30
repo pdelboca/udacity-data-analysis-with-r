@@ -200,7 +200,9 @@ ggplot(aes(x = age, y = friend_count),
 Notes:
 
 ```{r Friending Rate}
+pf.tenure <- subset(pf, tenure > 0)
 
+summary(pf$friending_rate)
 ```
 
 ***
@@ -209,11 +211,16 @@ Notes:
 Notes:
 
 What is the median friend rate?
-
+0.2205
 What is the maximum friend rate?
-
+417
 ```{r Friendships Initiated}
+# Create a line graph of mean of friendships_initiated per day (of tenure)
+# vs. tenure colored by year_joined.bucket.
 
+ggplot(subset(pf,tenure >= 1), aes(x=tenure,y=friendships_initiated/tenure)) + 
+  geom_smooth(aes(color = year_joined.bucket))
+  geom_line(stat="summary",fun.y=mean, aes(color = year_joined.bucket))
 ```
 
 ***
