@@ -272,7 +272,13 @@ Notes:
 Notes:
 
 ```{r Histograms Revisited}
+yo <- read.csv("./data/yogurt.csv")
+summary(yo)
+yo$id <- as.factor(yo$id)
 
+ggplot(yo, aes(x=price)) + geom_histogram()
+
+hist(yo$price)
 ```
 
 ***
@@ -281,7 +287,16 @@ Notes:
 Notes:
 
 ```{r Number of Purchases}
+# Create a new variable called all.purchases,
+# which gives the total counts of yogurt for
+# each observation or household.
 
+# The transform function produces a data frame
+# so if you use it then save the result to 'yo'!
+
+?transform
+yo <- transform(yo, all.purchases = strawberry + blueberry + 
+                              pina.colada + plain + mixed.berry)
 ```
 
 ***
@@ -290,7 +305,7 @@ Notes:
 Notes:
 
 ```{r Prices over Time}
-
+ggplot(yo, aes(x=time, y=price)) + geom_point(alpha = 1/10)
 ```
 
 ***
@@ -303,7 +318,28 @@ Notes:
 ### Looking at Samples of Households
 
 ```{r Looking at Sample of Households}
+set.seed(4230)
+sample.ids <- sample(levels(yo$id),16)
 
+ggplot(data = subset(yo, id %in% sample.ids),
+       aes(x = time, y = price)) + 
+  facet_wrap( ~ id ) + 
+  geom_line() + 
+  geom_point(aes(size = all.purchases), pch = 1) 
+
+plotSampleOfHouseholds <- function(yo, seed){
+set.seed(seed)
+sample.ids <- sample(levels(yo$id),16)
+
+ggplot(data = subset(yo, id %in% sample.ids),
+       aes(x = time, y = price)) + 
+  facet_wrap( ~ id ) + 
+  geom_line() +
+  geom_point(aes(size = all.purchases), pch = 1) + ggtitle(paste("Seed: ", seed))
+}
+plotSampleOfHouseholds(yo,1)
+plotSampleOfHouseholds(yo,2)
+plotSampleOfHouseholds(yo,3)
 ```
 
 ***
@@ -322,6 +358,17 @@ Notes:
 Notes:
 
 ***
+```{r}
+pf_sample <- subset(pf, select = 2:15)
+
+install.packages('psych')
+library(psych)
+library(dplyr)
+
+set.seed(1836)
+pairs.panels(pf_sample,pch=".")
+
+```
 
 ### Even More Variables
 Notes:
