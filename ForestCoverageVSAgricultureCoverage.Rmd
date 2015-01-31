@@ -5,15 +5,18 @@ date: "30/01/2015"
 output: html_document
 ---
 ## Introduction
-In my last analysis I went through the Forest Coverage in the main Countries of 
-the world. As now, I'm practicing 2 Variables analysis I will add the Agriculture 
+In my [last analysis](https://rpubs.com/pdelboca/forest-coverage) I went through the Forest Coverage in the main Countries of 
+the world. Now I'm practicing 2 Variables analysis so I will add the Agriculture 
 Coverage of each country to analyze the relationship between deforestation and 
 agriculture in each country.
 
-```{r}
+My main concern: **Is the World deforesting in order to have more land for Agriculture?**
+
+```{r,echo=FALSE, message=FALSE}
 library(reshape2) # melt function
 library(ggplot2)
 library(gridExtra)
+library(dplyr) # arrange
 setwd("~/Repos//data-analysis-with-r")
 ```
 
@@ -103,9 +106,9 @@ Coverage and the median is almost 40%.
 argentina <- subset(data, Country == "Argentina")
 argentina
 ```
-Agriculture in Argentina has grown almost a 3% Between 1990 and 2005.
+Agriculture Coverage in Argentina has grown almost a 3% Between 1990 and 2005.
 
-```{r}
+```{r, warning=FALSE}
 ggplot(argentina) + 
   geom_line(aes(x=Year,y=Agriculture.Coverage, group = Country), stat= "identity",
             size = 1, color = "red") +
@@ -116,21 +119,21 @@ ggplot(argentina) +
 ```
 
 It's not surprising to see Argentina closer to the 75% Quantile than the median, 
-[Argentina has a long agriculture tradition](http://en.wikipedia.org/wiki/Agriculture_in_Argentina). Also remind that Argentina is the [8th biggest country in the world](http://simple.wikipedia.org/wiki/List_of_countries_by_area) which gives Argentina a lot of squared kilometers dedicated
+[Argentina has a long agriculture tradition](http://en.wikipedia.org/wiki/Agriculture_in_Argentina). Also remind that Argentina is the [8th biggest country in the world](http://simple.wikipedia.org/wiki/List_of_countries_by_area) which gives Argentina a lot of square kilometers dedicated
 to the agriculture.
 
-#### Agriculture vs Forest Coverage
+#### Agriculture Coverage vs Forest Coverage
 
 Now let's start plotting some scatterplots:
 
-```{r}
+```{r, warning=FALSE}
 ggplot(data, aes(x=Forest.Coverage, y=Agriculture.Coverage)) + geom_point()
 ```
 
 .... Okay.... No idea of how to read this plot. Let's try plotting only 1 Year, 
 lets say, the last one:
 
-```{r}
+```{r, warning=FALSE}
 ggplot(subset(data, Year == 2005),
        aes(x=Forest.Coverage, y=Agriculture.Coverage)) + 
   geom_point() +
@@ -150,12 +153,12 @@ that will mean that Agriculture Coverage + Forest Coverage is bigger than the 10
 of the land. Two options: **bad data** or some countries uses their forest as
 agriculture land... Let's dig a little bit.
 
-```{r}
+```{r, warning=FALSE}
 ggplot(subset(data, Year == 2005),
        aes(x=Forest.Coverage, y=Agriculture.Coverage)) + 
   geom_point() +
   ggtitle("Forest Coverage vs Agriculture Coverage (2005)") + 
-  geom_abline(intercept = 100, slope = -1) +
+  geom_abline(intercept = 100, slope = -1, linetype = 2, color = "red") +
   scale_y_continuous(breaks = seq(0,100,5)) +
   scale_x_continuous(breaks = seq(0,100,5)) 
 
@@ -163,36 +166,117 @@ subset(data, Forest.Coverage + Agriculture.Coverage > 100)
 ```
 
 
+#### Correlation
+
 It's logical to say that Forest Coverage and Agriculture Coverage has a negative
  correlation, after all, you need to deforest in order to have more land to grow crops.
  Let's see if there is a Correlation between the Forest Coverage and Agriculture Coverage
- for 2005:
+ for 2005 (removing outliers):
  
  
 ```{r}
-with(subset(data, Year == 2005),
+with(subset(data, Year == 2005  & Forest.Coverage + Agriculture.Coverage < 100),
      cor.test(Forest.Coverage,Agriculture.Coverage))
+
+ggplot(subset(data, Year == 2005 & Forest.Coverage + Agriculture.Coverage < 100),
+       aes(x=Forest.Coverage, y=Agriculture.Coverage)) + 
+  geom_point() +
+  ggtitle("Forest Coverage vs Agriculture Coverage (2005)") + 
+  geom_abline(intercept = 100, slope = -1, linetype = 2, color = "red") +
+  scale_y_continuous(breaks = seq(0,100,5)) +
+  scale_x_continuous(breaks = seq(0,100,5)) +
+  geom_smooth(method = "lm")
 ```
 
 
 #### South America Countries
+
+Let's check South America Countries:
+
 ```{r}
 south.america <- c("Argentina", "Chile", "Uruguay", "Paraguay", "Brazil",
                    "Peru", "Ecuador", "Bolivia", "Venezuela", "Colombia",
                    "Suriname", "French Guiana", "Guyana")
-south.america.data <- subset(data, Country %in% south.america)
 
-ggplot(subset(south.america.data, Year == 2005),
-       aes(x=Forest.Coverage, y=Agriculture.Coverage)) + 
-  geom_point(aes(color = Country), size = 5, alpha = 1/2) +
-  ggtitle("Forest Coverage vs Agriculture Coverage (2005)")
-  
-
-with(subset(south.america.data, Year == 2005),
+with(subset(data, Year == 2005 & Country %in% south.america),
      cor.test(Forest.Coverage,Agriculture.Coverage))
 
+ggplot(subset(data, Year == 2005 & Country %in% south.america),
+       aes(x=Forest.Coverage, y=Agriculture.Coverage)) + 
+  geom_point(aes(color = Country), size = 5, alpha = 1/2) +
+  ggtitle("Forest Coverage vs Agriculture Coverage (2005)") +
+  geom_abline(intercept = 100, slope = -1, linetype = 2, color = "red") +
+  scale_y_continuous(breaks = seq(0,100,5)) +
+  scale_x_continuous(breaks = seq(0,100,5)) +
+  geom_smooth(method = "lm")
+  
 ```
 
+The correlation in South America countries seems to be stronger than the rest of the world.
 
-#### G20 Countries
+Does it mean that countries in South America whit less forest has more agriculture lands?
+Does it mean that countries in South America deforest in order to have more land for agriculture?
 
+
+#### Correlation between changes in Forest Coverage and Changes in Agriculture Coverage
+
+The main question here is: **Is there a correlation between the % of Deforestation and the increment in Agriculture Coverage?**
+
+```{r}
+Country <- as.character(unique(data$Country))
+Forest.Changes <- subset(data, Year == 2005)$Forest.Coverage - subset(data, Year == 1990)$Forest.Coverage
+Agriculture.Changes <- subset(data, Year == 2005)$Agriculture.Coverage - subset(data, Year == 1990)$Agriculture.Coverage
+
+countries.Changes <- data.frame(Country, Forest.Changes, Agriculture.Changes)
+countries.Changes$Country <- factor(countries.Changes$Country,
+                                      levels = countries.Changes$Country) 
+
+summary(countries.Changes)
+```
+
+It seems that there is a lot of missing data. Regarding Forest.Coverage it is no
+surprising to see those values, but Is it possible that a countrie has change its Ariculture
+Coverage in -40%?
+
+Let's look at the Worst 5%...
+
+```{r}
+subset(countries.Changes, 
+       Agriculture.Changes < quantile(Agriculture.Changes, probs = 0.05, na.rm = TRUE))
+```
+
+I can't found anything about drastic changes on those countries so I'm going to treat them as outliers. What about other outliers?
+
+```{r}
+subset(countries.Changes, 
+       Agriculture.Changes > quantile(Agriculture.Changes, probs = 0.95, na.rm = TRUE))
+```
+
+It seems that Saudi Arabia [had an amazing increase in its agriculture](http://www.saudiembassy.net/about/country-information/agriculture_water/Agricultural_Achievements.aspx) without
+even cutting a single tree. Not so sure about other outliers...
+
+#### Forest Changes vs Agriculture Changes
+ 
+```{r, warning=FALSE}
+ggplot(subset(countries.Changes, 
+       Agriculture.Changes > quantile(Agriculture.Changes, probs = 0.05, na.rm = TRUE)),
+       aes(x=Forest.Changes, y=Agriculture.Changes)) +
+  geom_point() + 
+  geom_smooth(method = "lm") +
+  ggtitle("Forest Coverage Changes vs Agriculture Coverage Changes \n between 1990 and 2005")
+
+ggplot(subset(countries.Changes, 
+       Agriculture.Changes > quantile(Agriculture.Changes, probs = 0.05, na.rm = TRUE) &
+         Country %in% south.america),
+       aes(x=Forest.Changes, y=Agriculture.Changes)) +
+  geom_point(aes(color = Country), alpha = 1/2, size = 5) + 
+  geom_smooth(method = "lm") +
+  ggtitle("Forest Coverage Changes vs Agriculture Coverage Changes \n between 1990 and 2005 \n in South America")
+```
+
+So it seems that Latin America has a greater negative correlation in Changes than the
+rest of the World. That could imply indeed that Deforestation main cause is Agriculture (rather than increment of population, cities, infraestructure, etc...)
+
+#### Conclusion
+
+Although there seems to be a negative correlation between Forest Coverage and Agriculture Coverage, mostly in South America Countries, I feel I cannot rely in the data due to some strange outliers described above and missing data.
