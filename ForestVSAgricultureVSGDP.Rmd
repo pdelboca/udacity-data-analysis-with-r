@@ -1,0 +1,164 @@
+## Introduction
+
+In this new analysis I will add two variables:  
+
+ - Agriculture (% of GDP)  
+ - Continent
+ 
+The main goal of the analysis is to explore the relation between all the variables
+across all the continents.
+ 
+## Getting and Cleaning Data
+Data has been obtained and downloaded from [Gapminder](http://www.gapminder.org/data/).
+
+There are 3 datasets:  
+
+ - **Agricultural land (% of land area)**,  
+ - **Forest coverage (%)**,   
+ - **Agriculture (% of GDP), **  
+ - **Countries per Continent **  
+ 
+ 
+**Note:** Since the goal of this course is not Getting and Cleaning data, I've
+manually removed years from Agriculture data to make it easier to read and clean. 
+*This is not a recomended practice*.
+
+```{r,echo=FALSE, message=FALSE}
+library(reshape2) # melt function
+library(ggplot2)
+library(gridExtra)
+library(dplyr) # arrange
+library(psych)
+setwd("~/Repos//data-analysis-with-r")
+```
+
+```{r,warning=FALSE}
+a.coverage <- read.csv("./data//agriculture land.csv",
+                   col.names = c("Country","1990","2000","2005"))
+f.coverage <- read.csv("./data//indicator_forest coverage.csv",
+                   col.names = c("Country","1990","2000","2005"))
+a.gdp <- read.csv("./data//agriculture p of GDP.csv", 
+                  col.names = c("Country","1990","2000","2005"))
+continents <- read.csv("./data//Countries-Continents.csv")
+
+a.coverage <- melt(a.coverage, id.vars = c("Country"))
+names(a.coverage) <- c("Country","Year","Agriculture.Coverage")
+f.coverage <- melt(f.coverage, id.vars = c("Country"))
+names(f.coverage) <- c("Country","Year","Forest.Coverage")
+a.gdp <- melt(a.gdp, id.vars = c("Country"))
+names(a.gdp) <- c("Country","Year","Agriculture.GDP")
+
+
+data <- merge(a.coverage,f.coverage, by=c("Country","Year"))
+data <- merge(data, a.gdp, by =c("Country", "Year"))
+data <- merge(data, continents, by = c("Country"))
+
+data$Year <- gsub("X","",data$Year)
+data$Year <- as.factor(data$Year)
+data$Agriculture.Coverage <- gsub(",",".",data$Agriculture.Coverage)
+data$Agriculture.Coverage <- as.numeric(data$Agriculture.Coverage)
+data$Forest.Coverage <- gsub(",",".",data$Forest.Coverage)
+data$Forest.Coverage <- as.numeric(data$Forest.Coverage)
+data$Agriculture.GDP <- gsub(",",".", data$Agriculture.GDP)
+data$Agriculture.GDP <- as.numeric(data$Agriculture.GDP)
+
+data <- data[complete.cases(data),]
+
+rm(a.coverage,f.coverage, a.gdp, continents)
+
+head(data)
+```
+
+Seems that data is ready to be processed...
+
+## Data Processing
+
+Let's do some explorative charts, nothing too formal, just to take a look at the
+data...
+
+```{r}
+pairs.panels(data)
+```
+
+There isn't too much correlation between variables. The most interesting relation is
+between Agriculture.Coverage and Forest.Coverage as I analized in my previuous exercise.
+By looking at the Agriculture.GDP histogram it seems that only a few countries depends
+on its agriculture.
+
+Let's take a closer look to Agriculture.GDP in 2005:
+```{r}
+summary(subset(data, Year == 2005)$Agriculture.GDP)
+
+ggplot(subset(data, Year == 2005), aes(x = Agriculture.GDP)) +
+  geom_histogram(binwidth = 1)
+
+ggplot(subset(data, Year == 2005), aes(x= Agriculture.GDP)) + 
+  geom_histogram(aes(fill = Continent),binwidth = 1) + 
+  facet_wrap(~ Continent)
+```
+
+#### Plotting Variable Means over Time
+```{r}
+ggplot(data, aes(x = Year, y= Agriculture.Coverage, group=Continent)) +
+  geom_line(stat = "summary", aes(color = Continent), fun.y = mean) +
+  ggtitle("Agriculture Coverage mean per Continent")
+
+ggplot(data, aes(x = Year, y= Forest.Coverage, group=Continent)) +
+  geom_line(stat = "summary", aes(color = Continent), fun.y = mean) +
+  ggtitle("Forest Coverage mean per Continent")
+
+ggplot(data, aes(x = Year, y= Agriculture.GDP, group=Continent)) +
+  geom_line(stat = "summary", aes(color = Continent), fun.y = mean) +
+  ggtitle("Agriculture % of GDP Coverage mean per Continent")
+```
+
+It looks like all the Agriculture % of GDP decreased in the World from 1990 to
+2005 **even when** Agriculture Coverage increased in Africa, Asia, North America, and
+South America.
+
+
+#### Agriculture Ratio
+
+Can **Agriculture.GDP** over **Agriculture.Coverage** may be used as a measure for the
+performance of the farms? 
+
+If two countries have different Agriculture.GDP but the same
+Agriculture.Coverage could imply that the biggest Agriculture.GDP has a better use of
+the soil. If 10% of my land produces the 20% of my GDP, then I'm making a better use
+of the soil than a country that uses 10% of their land to produce the 5% of the GDP.
+
+```{r}
+data$Agriculture.Ratio <- data$Agriculture.GDP / data$Agriculture.Coverage
+summary(data$Agriculture.Ratio)
+
+ggplot(subset(data, Agriculture.Ratio < quantile(Agriculture.Ratio, probs = 0.95)),
+              aes(x = Year, y = Agriculture.Ratio)) + geom_boxplot()
+
+ggplot(subset(data, Agriculture.Ratio < quantile(Agriculture.Ratio, probs = 0.95)),
+              aes(x = Year, y = Agriculture.Ratio)) + geom_boxplot() + facet_wrap(~Continent)
+```
+
+## Conclusion
+
+Facts extracted so far:  
+
+ - It seems that around the world, the Forest Coverage % per Country didn't change so much,
+ - This doesn't mean that the Total Forest Coverage in the world didn't change drastically, but this can mean that most of the countries has a firm policy about preserving forest.
+ - This also can mean that the main deforestation in the world is being done by a few countries.
+ - Even when countries are spending more and more land on Agriculture this doesn't mean that its contribution to the GDP is increasing, just the oposite.
+ - The most remarcable case is Asia, that has increased its Agriculture Coverage by almost 10% but the Agriculture.GDP decreased by 3%
+
+```{r}
+ggplot(subset(data, Continent == "Asia"),
+       aes(x = Year, y = Agriculture.Coverage, group = Continent)) +
+  geom_line(stat = "summary", aes(color = Continent), fun.y = mean)
+
+ggplot(subset(data, Continent == "Asia"),
+       aes(x = Year, y = Agriculture.GDP, group = Continent)) +
+  geom_line(stat = "summary", aes(color = Continent), fun.y = mean)
+
+
+```
+
+
+
