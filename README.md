@@ -12,4 +12,4 @@ All the data has been donwloaded from [Gapminder](http://www.gapminder.org/data/
 
   - Explore 1 Variable: [Forest Coverage](https://rpubs.com/pdelboca/forest-coverag)
   - Explore 2 Variables: [Forest Coverage vs Agriculture Coverage] (https://rpubs.com/pdelboca/forest-coverage-vs-agriculture-coverage)
-  - Explore 3 Variables: [Forest Coverage vs Agriculture Coverage vs Agriculture % (GDP) Per Continent] [https://rpubs.com/pdelboca/forest-vs-agriculture-vs-agriculture-gdp]
+  - Explore 3 Variables: [Forest Coverage vs Agriculture Coverage vs Agriculture % (GDP) Per Continent](https://rpubs.com/pdelboca/forest-vs-agriculture-vs-agriculture-gdp)
