@@ -267,9 +267,14 @@ pf.fc_by_age_months <- pf %>%
 ### Noise in Conditional Means
 
 ```{r Noise in Conditional Means}
+
 ggplot(subset(pf.fc_by_age_months, age_with_months < 71),
       aes(x = age_with_months, y = friend_count_mean)) +
   geom_line()
+  
+ggplot(subset(pf.fc_by_age_months, age_with_months < 71),
+      aes(x = age_with_months, y = friend_count_mean)) +
+  geom_freqpoly()
 ```
 
 ***
